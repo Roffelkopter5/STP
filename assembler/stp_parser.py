@@ -14,7 +14,7 @@ class Node:
     children: list[Node] = field(repr=False)
 
 
-A0_INSTRUCTIONS = ["HLT"]
+A0_INSTRUCTIONS = ["HLT", "NOP"]
 A1_INSTRUCTIONS = ["JMP", "JZE", "JNZ"]
 A3_INSTRUCTIONS = [
     "ADD",

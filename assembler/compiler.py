@@ -2,6 +2,7 @@ from .stp_parser import Parser, Node
 from .tokenizer import Token, TokenType
 
 OPCODES = {
+    "NOP": 0,
     "ADD": 1,
     "ADDC": 2,
     "SUB": 3,
@@ -58,8 +59,8 @@ class Compiler:
 
     def get_imm(self, t: Token, size: int):
         v = int(t.value)
-        if len(bin(v)) > size:
-            print("Warning: integer values should not exceed 255")
+        # if len(bin(v)) > size:
+        #     print("Warning: integer values should not exceed 255")
         return v & (2**size - 1)
 
     # TODO: Better Layout/Signature System. It's a total mess

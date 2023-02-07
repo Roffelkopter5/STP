@@ -27,14 +27,14 @@ class Token:
 
 
 TOKEN_DEFINTIONS = {
-    TokenType.LABEL: re.compile("^[A-Z]+:"),
-    TokenType.DIRECTIVE: re.compile("^\\.[A-Z]+"),
-    TokenType.IDENTIFIER: re.compile("[A-Z]+\\b"),
-    TokenType.REGISTER: re.compile("^R\\d{1,2}"),
-    TokenType.INTEGER: re.compile("^\\d+"),
-    TokenType.COMMA: re.compile("^,"),
+    TokenType.LABEL: re.compile(r"^[A-Z]+:"),
+    TokenType.DIRECTIVE: re.compile(r"^\.[A-Z]+"),
+    TokenType.IDENTIFIER: re.compile(r"[A-Z]+\b"),
+    TokenType.REGISTER: re.compile(r"^R\d{1,2}"),
+    TokenType.INTEGER: re.compile(r"^\d+"),
+    TokenType.COMMA: re.compile(r"^,"),
 }
-WHITE_SPACE = re.compile("^\\s+")
+COMMENT = re.compile(r"^\s*(#[^\n]*|\s+)")
 
 
 class Tokenizer:
@@ -48,7 +48,7 @@ class Tokenizer:
         return self.curr_token
 
     def get_next_token(self):
-        if m := re.match(WHITE_SPACE, self.buffer[self.pointer :]):
+        while m := re.match(COMMENT, self.buffer[self.pointer :]):
             self.pointer += m.end()
         if self.pointer >= self.buff_len:
             self.curr_token = None

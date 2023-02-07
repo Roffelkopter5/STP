@@ -1,0 +1,61 @@
+# Version 1
+
+# This is a line comment. Line comments must start with '#'
+NOP # It can aslo be written inline, for example after an instruction
+
+# The STP-Assembler is case insensitive
+# So this:
+ADD R0, R0, R0
+# Is the same as:
+add r0, r0, r0
+# Upper- and lowercase can therefore also be mixed
+# But it's best for readability, to stick to one scheme
+# For the rest of the example, instructions will be in uppercase and arguments in lower
+
+# Registers are addressed with r<N>, where N ist the number of the register
+# The CPU currently supports 16 (from 0 to 15) 8bit wide registers
+
+ADD r1, r1, 33 # Means: Add 33 to r1 and save the result in r1
+SUB r0, r1, 33 # Means: Subtract 33 from r1 and save the result in r0
+
+# The Structure for arithmetic and bitwise operations generally is:
+# INSTRUCTION rd, rs1, rs2/imm8
+# Where:
+# - rd is the destination register
+# - rs1 is the first source register
+# - rs2 is the second source register
+# or alternatively:
+# - imm8 is an 8-bit integer value (so from 0 - 255)
+#        (If the given value is larger than 255, it will be wrapped around)
+
+ADD r1, r1, 223
+
+# Labels can be defined with a trailing ':'
+label:
+# But can currently not be used as an argument (so right now they are pretty useless)
+# True label functionality will be added in near future
+
+# Labels can not contain spaces or special characters expect numbers and underscore (_)
+# 'mein label:' is invalid
+# 'mein_label:' is valid
+
+# The STP-Assembler will ouptut error messages, but they only contain an error type 
+# and little to none information about the cause or place of the error.
+# The error handling is currently work in progress
+
+# A little programm that calculates the tenth Fibonacci number
+ADD r0, r0, 0
+ADD r1, r1, 1
+ADD r10, r10, 9 # First is given
+loop: # Not used
+ADD r2, r0, r1
+ADD r0, r1, 0
+ADD r1, r2, 0
+SUB r10, r10, 1
+JNZ 27 # Jump to loop
+# Result in r2 (and r1)
+
+# It is advised to put a 'HLT' instruction at the end of the assembly file 
+# otherwise the CPU will not stop reading instructions until it runs out
+# of memory
+HLT
