@@ -14,9 +14,9 @@ OPCODES = {
     "OR": 9,
     "XOR": 10,
     "NOR": 11,
-    "JMP": 28,
-    "JZE": 29,
-    "JNZ": 30,
+    "JMP": 17,
+    "JZE": 18,
+    "JNZ": 19,
     "HLT": 31,
 }
 
@@ -44,7 +44,7 @@ class Compiler:
 
     def set_label(self, t: Token):
         if t.value not in self.labels:
-            self.labels[t.value] = self.instr_counter + 1
+            self.labels[t.value[:-1]] = self.instr_counter
         else:
             raise CompilationError(f"Label '{t.value}' already exists!")
 
@@ -58,10 +58,20 @@ class Compiler:
             return reg
 
     def get_imm(self, t: Token, size: int):
-        v = int(t.value)
-        # if len(bin(v)) > size:
-        #     print("Warning: integer values should not exceed 255")
-        return v & (2**size - 1)
+        if t.token_type == TokenType.INTEGER:
+            v = int(t.value)
+            # if len(bin(v)) > size:
+            #     print("Warning: integer values should not exceed 255")
+            return v & (2**size - 1)
+        elif t.token_type == TokenType.IDENTIFIER:
+            if (v := self.labels.get(t.value)) is None:
+                raise CompilationError(f"Unknown identifier: '{t.value}'")
+            v *= 3
+            return v & (2**size - 1)
+        else:
+            raise CompilationError(
+                f"Supplied value can't be interpreted as Immidiate: '{t.value}'"
+            )
 
     # TODO: Better Layout/Signature System. It's a total mess
     def build_instruction(self, node: Node):

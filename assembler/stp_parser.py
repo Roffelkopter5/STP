@@ -108,7 +108,7 @@ class Parser:
         t = self.tokenizer.get_next_token()
         if t.token_type == TokenType.REGISTER:
             return "RS2", Node(t, None)
-        elif t.token_type == TokenType.INTEGER:
+        elif t.token_type == TokenType.INTEGER or t.token_type == TokenType.IDENTIFIER:
             return "I8", Node(t, None)
         else:
             raise ParsingError(
@@ -117,7 +117,7 @@ class Parser:
 
     def parse_int(self):
         t = self.tokenizer.get_next_token()
-        if t.token_type != TokenType.INTEGER:
+        if t.token_type != TokenType.INTEGER and t.token_type != TokenType.IDENTIFIER:
             raise ParsingError(
                 f"Wrong arguments! Expected 'INTEGER' got '{t.token_type.name}'"
             )

@@ -32,8 +32,6 @@ ADD r1, r1, 223
 
 # Labels can be defined with a trailing ':'
 label:
-# But can currently not be used as an argument (so right now they are pretty useless)
-# True label functionality will be added in near future
 
 # Labels can not contain spaces or special characters expect numbers and underscore (_)
 # 'mein label:' is invalid
@@ -47,12 +45,12 @@ label:
 ADD r0, r0, 0
 ADD r1, r1, 1
 ADD r10, r10, 9 # First is given
-loop: # Not used
+loop: 
 ADD r2, r0, r1
 ADD r0, r1, 0
 ADD r1, r2, 0
 SUB r10, r10, 1
-JNZ 27 # Jump to loop
+JNZ loop
 # Result in r2 (and r1)
 
 # It is advised to put a 'HLT' instruction at the end of the assembly file 

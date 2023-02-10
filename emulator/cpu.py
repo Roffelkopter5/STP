@@ -7,6 +7,7 @@ Address = int
 
 class OpCode(Enum):
     NOP = 0
+
     ADD = auto()
     ADDC = auto()
     SUB = auto()
@@ -17,11 +18,25 @@ class OpCode(Enum):
     AND = auto()
     OR = auto()
     XOR = auto()
-    NOR = auto()
-    ...
-    JMP = 28
-    JZE = 29
-    JNZ = 30
+    NOR = auto()  # 11
+
+    CMP = auto()  # 12
+
+    INB = auto()
+    OUTB = auto()  # 14
+
+    LDB = auto()
+    STB = auto()  # 16
+
+    JMP = auto()  # 17
+    JZE = auto()
+    JNZ = auto()
+    JCA = auto()
+    JNC = auto()
+    JSN = auto()
+    JNS = auto()  # 23
+
+    INT = 30
     HLT = 31
 
 
@@ -68,8 +83,8 @@ class CPU:
     def decode_instr(self):
         # 00IIIII | DDDD SSSS SSSS XXXXX
         # 01IIIII | DDDD SSSS VVVV VVVVX
-        # 10IIIII | ???? ???? ???? ?????
-        # 11IIIII | AAAA AAAA AAAA AAAAX
+        # 10IIIII | DDDD VVVV VVVV VVVVX
+        # 11IIIII | VVVV VVVV VVVV VVVVX
         layout = (self.instr_buffer >> 22) & 0b11
         self.opcode = OpCode((self.instr_buffer >> 17) & 0b11111)
         if layout == 0:
@@ -96,7 +111,10 @@ class CPU:
         }
 
     def decode_L2(self):
-        pass
+        self.decoded_args = {
+            "dest": (self.instr_buffer >> 13) & 0xF,
+            "val": (self.instr_buffer >> 1) & 0xFFF,
+        }
 
     def decode_L3(self):
         self.decoded_args = {
