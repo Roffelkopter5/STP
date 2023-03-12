@@ -126,7 +126,6 @@ class Parser:
     def body(self) -> list[Node]:
         return self.root.children
 
-    # * Deprecated
     def print_node(self, n, level):
         print(f"{' ' * level}{'-' if n.children else ' '} {n}")
         if n.children:
