@@ -81,10 +81,10 @@ class CPU:
             self.instr_buffer |= self.memory.load_byte(self.PC()) << (8 * i)
 
     def decode_instr(self):
-        # 00IIIII | DDDD SSSS SSSS XXXXX
-        # 01IIIII | DDDD SSSS VVVV VVVVX
-        # 10IIIII | DDDD VVVV VVVV VVVVX
-        # 11IIIII | VVVV VVVV VVVV VVVVX
+        # 000IIIII | DDDD SSSS SSSS XXXX
+        # 001IIIII | DDDD SSSS VVVV VVVV
+        # 010IIIII | DDDD VVVV VVVV VVVV
+        # 011IIIII | VVVV VVVV VVVV VVVV
         layout = (self.instr_buffer >> 22) & 0b11
         self.opcode = OpCode((self.instr_buffer >> 17) & 0b11111)
         if layout == 0:

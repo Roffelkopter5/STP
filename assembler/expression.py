@@ -21,6 +21,7 @@ class TokenType(Enum):
     INT = auto()
     BIN = auto()
     HEX = auto()
+    CHAR = auto()
 
 
 @dataclass
@@ -39,6 +40,7 @@ TOKEN_DEFINTIONS = {
     TokenType.HEX: re.compile(r"^0X[0-9A-F]+"),
     TokenType.BIN: re.compile(r"^0B[01]+"),
     TokenType.INT: re.compile(r"^\d+"),
+    TokenType.CHAR: re.compile(r"^'[A-Z]'"),
 }
 
 OP_PRESEDENCE = {"|": 0, "^": 1, "&": 2, "+": 3, "-": 3, "*": 4, "/": 5}
@@ -47,7 +49,7 @@ BIN_OP_FUNC = {
     "+": lambda r, l: r + l,
     "-": lambda r, l: r - l,
     "*": lambda r, l: r * l,
-    "/": lambda r, l: r / l,
+    "/": lambda r, l: r // l,
     "|": lambda r, l: r | l,
     "&": lambda r, l: r & l,
 }
@@ -117,6 +119,8 @@ def parse_primary(t: Tokenizer):
         return Node("VAL", int(token.value, 16), None)
     elif token.token_type == TokenType.BIN:
         return Node("VAL", int(token.value, 2), None)
+    elif token.token_type == TokenType.CHAR:
+        return Node("VAL", ord(token.value[1]), None)
     elif token.token_type == TokenType.ID:
         return Node("ID", token.value, None)
     else:
@@ -138,7 +142,7 @@ def parse_expression(t: Tokenizer, p=0, lhs=None):
         while (
             token
             and token.token_type == TokenType.OPERATOR
-            and OP_PRESEDENCE[token.value] >= p + 1
+            and OP_PRESEDENCE[token.value] >= OP_PRESEDENCE[op.value] + 1
         ):
             rhs = parse_expression(t, p + 1, rhs)
             token = t.peek_next_token()
@@ -162,6 +166,7 @@ def eval_node(n: Node):
         return n.value
 
 
-t = Tokenizer("")
+t = Tokenizer("5 * 3 + 2 - 4 * 8 / 2")
 start = parse_expression(t)
+print_node(start, 0)
 print(eval_node(start))
