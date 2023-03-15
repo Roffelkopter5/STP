@@ -6,24 +6,80 @@
 			"include": "#keywords"
 		},
 		{
-			"include": "#strings"
+			"include": "#comment"
+		},
+		{
+			"name": "entity.name.tag.stp",
+			"match": "[[:alpha:]_][[:alnum:]_]*\\s*\\:"
+		},
+		{
+			"name": "storage.type.register.stp",
+			"match": "(?i)\\br\\d{1,2}\\b"
+		},
+		{
+			"include": "#literals"
 		}
 	],
 	"repository": {
 		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.stp",
-				"match": "\\b(if|while|for|return)\\b"
-			}]
-		},
-		"strings": {
-			"name": "string.quoted.double.stp",
-			"begin": "\"",
-			"end": "\"",
 			"patterns": [
 				{
-					"name": "constant.character.escape.stp",
-					"match": "\\\\."
+					"name": "keyword.arithemtic.stp",
+					"match": "(?i)\\b(add|addc|sub|subb|shr|shl|sha|and|or|xor|nor|cmp)\\b"
+				},
+				{
+					"name": "keyword.io.stp",
+					"match": "(?i)\\b(inb|outb)\\b"
+				},
+				{
+					"name": "keyword.branch.stp",
+					"match": "(?i)\\b(jmp|jze|jnz|jca|jnc|jsn|jns)"
+				},
+				{
+					"name": "keyword.memory.stp",
+					"match": "(?i)\\b(ldb|stb)\\b"
+				},
+				{
+					"name": "keyword.system.stp",
+					"match": "(?i)\\b(nop|int|hlt)\\b"
+				}
+			]
+		},
+		"comment": {
+			"patterns": [
+				{
+					"name": "comment.line.stp",
+					"match": "#.*\n"
+				}
+			]
+		},
+		"literals": {
+			"patterns": [
+				{
+					"match": "\\b(?i:(0b))([01]+)",
+					"captures": {
+						"1": {
+							"name": "storage.type.binary.stp"
+						},
+						"2": {
+							"name": "constant.numeric.binary.stp"
+						}
+					}
+				},
+				{
+					"match": "\\b(?i:(0b))([01]+)",
+					"captures": {
+						"1": {
+							"name": "storage.type.hexadecimal.stp"
+						},
+						"2": {
+							"name": "constant.numeric.hexadecimal.stp"
+						}
+					}
+				},
+				{
+					"name": "constant.numeric.decimal.stp",
+					"match": "(?i)\\b\\d+"
 				}
 			]
 		}
