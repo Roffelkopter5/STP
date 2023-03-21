@@ -37,13 +37,20 @@ class Node:
 
 
 @dataclass
-class InstrDef:
-    signature: tuple[ArgType]
-    layout: int
+class Signature:
+    arg_types: tuple[ArgType]
+    memory_layout: int = -1
 
 
-SIG_2 = (ArgType.REGISTER, ArgType.IMMEDIATE_12)
-SIG_2 = ArgType.IMMEDIATE_16
+@dataclass
+class InstructionDef:
+    name: str
+    aliases: tuple[str] = None
+    signatures: tuple[Signature] | Signature
+
+    def isName(self, name: str) -> bool:
+        return name == self.name or name in self.aliases
+
 
 ARITHMETIC_INSTR = {
     "ADD",
@@ -63,28 +70,7 @@ MEMORY_INSTRUCTIONS = {"LDB", "STB"}
 
 JUMP_INSTR = {"JMP", "JZE", "JNZ", "JCA", "JNC", "JSN", "JNS"}
 
-INSTRUCTION_SET = ARITHMETIC_INSTR | MEMORY_INSTRUCTIONS | JUMP_INSTR
-
-INSTRUCTION_DEF = {}
-
-
-def APPEND_INSTR_DEF(instrs, instr_defs):
-    global INSTRUCTION_DEF
-    for instr in instrs:
-        INSTRUCTION_DEF[instr] = instr_defs
-
-
-APPEND_INSTR_DEF(
-    ARITHMETIC_INSTR,
-    (
-        InstrDef((ArgType.REGISTER, ArgType.REGISTER, ArgType.REGISTER), 0),
-        InstrDef((ArgType.REGISTER, ArgType.REGISTER, ArgType.IMMEDIATE_8), 1),
-    ),
-)
-
-APPEND_INSTR_DEF(MEMORY_INSTRUCTIONS, ())  # TODO: Restructure memory instructions
-
-APPEND_INSTR_DEF(JUMP_INSTR, (InstrDef((ArgType.IMMEDIATE_16,), 3),))
+INSTRUCTION_SET: list[InstructionDef] = []
 
 
 class Parser:
@@ -119,11 +105,16 @@ class Parser:
 
     def parse_instruction(self):
         instr_token = self.tokenizer.get_next_token()
-        instr = instr_token.value.upper()
-        if instr not in INSTRUCTION_SET:
-            raise ParsingError(f"Unknown Instruction '{instr}'!")
-        instr_defs = INSTRUCTION_DEF[instr]
-        print(instr_defs)
+        instr_name = instr_token.value.upper()
+        for instr in INSTRUCTION_SET:
+            if instr.isName(instr_name):
+                break
+        else:
+            raise ParsingError(f"Unknown instruction '{instr_name}'")
+        args = self.parse_arguments(instr)
+
+    def parse_arguments(self, instr_def: InstructionDef):
+        pass
 
     def body(self) -> list[Node]:
         return self.root.children
