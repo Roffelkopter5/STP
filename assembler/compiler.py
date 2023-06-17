@@ -58,7 +58,7 @@ class Compiler:
             return reg
 
     def get_imm(self, t: Token, size: int):
-        if t.token_type == TokenType.INT_LITERAL:
+        if t.token_type == TokenType.INTEGER:
             v = int(t.value)
             # if len(bin(v)) > size:
             #     print("Warning: integer values should not exceed 255")

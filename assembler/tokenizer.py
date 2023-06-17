@@ -9,62 +9,46 @@ class TokenizationError(Exception):
 
 
 class TokenType(Enum):
+    INSTRUCTION = auto()
+    REGISTER = auto()
+    INTEGER = auto()
+    COMMA = auto()
     LABEL = auto()
-    PREPROCESSOR = auto()
+    MACRO = auto()
     DIRECTIVE = auto()
     IDENTIFIER = auto()
-    REGISTER = auto()
-    INT_LITERAL = auto()
-    HEX_LITERAL = auto()
-    BIN_LITERAL = auto()
-    CHAR_LITERAL = auto()
-    STRING_LITERAL = auto()
-    COMMA = auto()
-    OPERATOR = auto()
+    SIGNATURE = auto()
 
 
 @dataclass
 class Token:
     token_type: TokenType
     value: str
-    line_nr: int = 0
-    char_nr: int = 0
 
 
 TOKEN_DEFINTIONS = {
-    TokenType.LABEL: re.compile(r"^[a-z]\w*:", re.IGNORECASE),
-    TokenType.PREPROCESSOR: re.compile(r"^@[a-z]\w*", re.IGNORECASE),
-    TokenType.DIRECTIVE: re.compile(r"^\.[a-z]\w*", re.IGNORECASE),
-    TokenType.IDENTIFIER: re.compile(r"[a-z]\w*", re.IGNORECASE),
-    TokenType.REGISTER: re.compile(r"^r\d{1,2}"),
-    TokenType.INT_LITERAL: re.compile(r"^\d+"),
-    TokenType.HEX_LITERAL: re.compile(r"^0x[\dA-F]+", re.IGNORECASE),
-    TokenType.BIN_LITERAL: re.compile(r"^0b[01]+", re.IGNORECASE),
-    TokenType.CHAR_LITERAL: re.compile(r"'.*'"),
-    TokenType.STRING_LITERAL: re.compile(r"\".*\""),
+    TokenType.LABEL: re.compile(r"^[A-Z]+:"),
+    TokenType.DIRECTIVE: re.compile(r"^\.[A-Z]+"),
+    TokenType.IDENTIFIER: re.compile(r"[A-Z]+\b"),
+    TokenType.REGISTER: re.compile(r"^R\d{1,2}"),
+    TokenType.INTEGER: re.compile(r"^\d+"),
     TokenType.COMMA: re.compile(r"^,"),
-    TokenType.OPERATOR: re.compile(r"^\+|-|\*|/|~|\||&"),
 }
-COMMENT_AND_WHITESPACE = re.compile(r"^\s*(#[^\n]*|\s+)")
+COMMENT = re.compile(r"^\s*(#[^\n]*|\s+)")
 
 
 class Tokenizer:
     def __init__(self, buffer: str) -> None:
-        self.buffer = buffer.strip()
+        self.buffer = buffer.strip().upper()
         self.pointer = 0
         self.buff_len = len(self.buffer)
-        self.curr_token = self.scan_token()
+        self.curr_token = None
 
-    def peek_next_token(self):
+    def get_current_token(self):
         return self.curr_token
 
     def get_next_token(self):
-        current = self.curr_token
-        self.scan_token()
-        return current
-
-    def scan_token(self):
-        while m := re.match(COMMENT_AND_WHITESPACE, self.buffer[self.pointer :]):
+        while m := re.match(COMMENT, self.buffer[self.pointer :]):
             self.pointer += m.end()
         if self.pointer >= self.buff_len:
             self.curr_token = None
