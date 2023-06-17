@@ -1,8 +1,10 @@
 from __future__ import annotations
-from queue import Queue
+from queue import Queue, Empty
 import time
 from typing import NamedTuple
 from enum import Enum, auto
+from threading import Thread
+import random
 
 
 class RequestMethod(Enum):
@@ -43,12 +45,10 @@ class Response(NamedTuple):
 
 
 class Device:
-    def register(self, port: int, controller: DeviceController):
-        self._controller = controller
+    def startup(self, port: int):
         self._port = port
-
-    def unregister(self):
-        self._controller = None
+    
+    def shutdown(self):
         self._port = -1
 
     def send(self, data: int):
@@ -56,12 +56,6 @@ class Device:
 
     def receive(self):
         self._controller.interrupt(Request.read(self._port))
-
-    def startup(self, port: int):
-        pass
-
-    def shutdown(self):
-        pass
 
     def on_write(self, data: int):
         pass
@@ -74,9 +68,12 @@ class Device:
 
 
 class DeviceController:
-    def __init__(self, max_ports: int):
+    def __init__(self, max_ports: int, in_queue: Queue = None, out_queue: Queue = None):
         self.status_reg = 0
+        self.max_devices = max_ports
         self.devices: list[Device] = [None for _ in range(max_ports)]
+        self.in_queue = in_queue
+        self.out_queue = out_queue
 
     def allow_int(self, port: int):
         return bool(2**port & self.status_reg)
@@ -131,15 +128,47 @@ class DeviceController:
         else:
             return Response(ResponseCode.FAIL, 0)
 
-    def run(self, io_queue: Queue):
+    def run(self):
         last_time = time.monotonic()
         for port, dev in enumerate(self.devices):
-            dev.startup(port)
+            if dev:
+                dev.startup(port)
         while True:
-            if not io_queue.empty():
-                request = io_queue.get()
+            try:
+                request = self.in_queue.get_nowait()
                 response = self.handle_request(request)
-                io_queue.put(response)
+                self.out_queue.put(response)
+            except Empty:
+                pass
             delta, last_time = self.get_delta(last_time)
             for dev in self.devices:
-                dev.update(delta)
+                if dev:
+                    dev.update(delta)
+
+
+class TestDevice(Device):
+    DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+    def startup(self, port: int):
+        super().startup(port)
+        self.index = 0
+
+    def on_read(self):
+        return TestDevice.DATA[self.index]
+    
+    def on_write(self, data: int):
+        self.index = data % len(self.DATA)
+
+iq = Queue()
+oq = Queue()
+devc = DeviceController(256, iq, oq)
+tdev = TestDevice()
+devc.register_device(tdev, 10)
+Thread(target=devc.run, daemon=True).start()
+for i in range(10):
+    iq.put(Request.read(10))
+    resp = oq.get()
+    print(i)
+    print(f"{resp=}")
+    iq.put(Request.write(10, i+1))
+    oq.get()
