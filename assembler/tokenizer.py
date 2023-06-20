@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import Flag, auto
 from dataclasses import dataclass
 import re
 
@@ -8,12 +8,13 @@ class TokenizationError(Exception):
         super().__init__(*args)
 
 
-class TokenType(Enum):
+class TokenType(Flag):
     LABEL = auto()
     PREPROCESSOR = auto()
     DIRECTIVE = auto()
     IDENTIFIER = auto()
     REGISTER = auto()
+    IREGISTER = auto()
     INT_LITERAL = auto()
     HEX_LITERAL = auto()
     BIN_LITERAL = auto()
@@ -21,6 +22,16 @@ class TokenType(Enum):
     STRING_LITERAL = auto()
     COMMA = auto()
     OPERATOR = auto()
+    OPEN_PARAN = auto()
+    CLOSE_PARAN = auto()
+    IMMEDIATE = INT_LITERAL | HEX_LITERAL | BIN_LITERAL | CHAR_LITERAL | IDENTIFIER
+    EXPRESSION = IMMEDIATE | OPEN_PARAN 
+    VPARAM = EXPRESSION
+    RPARAM = REGISTER
+    IRPARAM = IREGISTER
+    XPARAM = VPARAM | RPARAM
+    IXPARAM = VPARAM | IRPARAM
+    PARAM = VPARAM | RPARAM | IRPARAM | XPARAM | IXPARAM
 
 
 @dataclass
@@ -43,7 +54,14 @@ TOKEN_DEFINTIONS = {
     TokenType.CHAR_LITERAL: re.compile(r"'.*'"),
     TokenType.STRING_LITERAL: re.compile(r"\".*\""),
     TokenType.COMMA: re.compile(r"^,"),
-    TokenType.OPERATOR: re.compile(r"^\+|-|\*|/|~|\||&"),
+    TokenType.OPEN_PARAN: re.compile(r"^\("),
+    TokenType.CLOSE_PARAN: re.compile(r"^\)"),
+    TokenType.VPARAM: re.compile(r"^%v", re.IGNORECASE),
+    TokenType.RPARAM: re.compile(r"^%r", re.IGNORECASE),
+    TokenType.IRPARAM: re.compile(r"^%ir", re.IGNORECASE),
+    TokenType.XPARAM: re.compile(r"^%x", re.IGNORECASE),
+    TokenType.IXPARAM: re.compile(r"^%ix", re.IGNORECASE),
+    TokenType.OPERATOR: re.compile(r"^\+|-|\*|/|~|\||&|%"),
 }
 COMMENT_AND_WHITESPACE = re.compile(r"^\s*(#[^\n]*|\s+)")
 
