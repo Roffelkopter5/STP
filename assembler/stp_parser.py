@@ -56,6 +56,7 @@ class Parser:
 
     def parse(self):
         token = self.tokenizer.peek_next_token()
+        node = None
         while token.token_type != TokenType.EOF:
             match token.token_type:
                 case TokenType.DIRECTIVE:
@@ -68,12 +69,12 @@ class Parser:
                 case TokenType.IDENTIFIER:
                     node = self.parse_instruction()
                 case TokenType.EOL:
-                    continue
+                    self.tokenizer.get_next_token()
                 case _:
                     raise ParsingError("Unexpected Token")
             if isinstance(node, list):
                 self.root.children.extend(node)
-            else:
+            elif node:
                 self.root.children.append(node)
             token = self.tokenizer.peek_next_token()
 
@@ -203,6 +204,6 @@ class Parser:
         self.print_node(self.root, 0)
 
 
-p = Parser(buffer="ADD r1, r2, r3")
+p = Parser(path="./example.stp")
 p.parse()
 p.print_ast()

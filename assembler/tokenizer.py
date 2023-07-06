@@ -67,7 +67,7 @@ class Tokenizer:
     def __init__(self, buffer: str) -> None:
         self.line_index = 0
         self.char_index = 0
-        self.buffer = buffer.strip().split()
+        self.buffer = buffer.strip().split("\n")
         self.buff_len = len(self.buffer)
         if self.buff_len == 0:
             self.curr_token = Token(TokenType.EOF, "", self.line_index, self.char_index)
@@ -83,12 +83,6 @@ class Tokenizer:
         return current
 
     def scan_token(self):
-        line = self.buffer[self.line_index]
-        if self.char_index >= len(line):
-            self.curr_token = Token(TokenType.EOL, "", self.line_index, self.char_index)
-            self.line_index += 1
-            self.char_index = 0
-            return self.curr_token
         if self.line_index >= self.buff_len:
             self.curr_token = Token(
                 TokenType.EOF,
@@ -96,6 +90,12 @@ class Tokenizer:
                 self.line_index - 1,
                 len(self.buffer[self.line_index - 1]) - 1,
             )
+            return self.curr_token
+        line = self.buffer[self.line_index]
+        if self.char_index >= len(line):
+            self.curr_token = Token(TokenType.EOL, "", self.line_index, self.char_index)
+            self.line_index += 1
+            self.char_index = 0
             return self.curr_token
         if m := re.match(COMMENT_AND_WHITESPACE, line[self.char_index :]):
             self.char_index += m.end()
