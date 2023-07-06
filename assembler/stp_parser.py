@@ -16,6 +16,8 @@ class NodeType(Enum):
     INSTR = auto()
     LABEL = auto()
     EXPRESSION = auto()
+    REGISTER = auto()
+    IREGISTER = auto()
 
 
 @dataclass
@@ -29,21 +31,17 @@ class Node:
 @dataclass
 class Signature:
     param_types: list[TokenType]
+    param_count: int
     memory_layout: int = -1
 
 
-@dataclass
-class InstructionDef:
-    name: str
-    aliases: tuple[str] = None
-    signatures: tuple[Signature] | Signature
+INSTRUCTION_SET: dict[str, list[Signature]] = {
+    "ADD": [Signature([TokenType.RPARAM, TokenType.RPARAM, TokenType.RPARAM], 3, 0)]
+}
+ARGUMENT_TOKENS: list[TokenType] = []
 
-    def isName(self, name: str) -> bool:
-        return name == self.name or name in self.aliases
-
-
-INSTRUCTION_SET: dict[str, list[Signature]]
-ARGUMENT_TOKENS: list[TokenType]
+REGISTER_MAPPING: dict[str, int] = {"r1": 1, "r2": 2, "r3": 3}
+IREGISTER_MAPPING: dict[str, int] = {}
 
 
 class Parser:
@@ -52,13 +50,13 @@ class Parser:
             with open(path, "r") as f:
                 buffer = f.read()
         self.tokenizer = Tokenizer(buffer)
-        self.root = Node(NodeType.ROOT, None)
+        self.root = Node(NodeType.ROOT, children=[])
 
         self.macros: DefaultDict[str, list[Signature]] = defaultdict(list)
 
     def parse(self):
         token = self.tokenizer.peek_next_token()
-        while token:
+        while token.token_type != TokenType.EOF:
             match token.token_type:
                 case TokenType.DIRECTIVE:
                     node = self.parse_directive()
@@ -69,6 +67,8 @@ class Parser:
                     node = self.parse_preprocessor()
                 case TokenType.IDENTIFIER:
                     node = self.parse_instruction()
+                case TokenType.EOL:
+                    continue
                 case _:
                     raise ParsingError("Unexpected Token")
             if isinstance(node, list):
@@ -102,39 +102,75 @@ class Parser:
         instr_name = instr_token.value.upper()
         if instr_name in INSTRUCTION_SET:
             signatures = INSTRUCTION_SET[instr_name]
-            index, args = self.select_signature(signatures)
-            # FIXME
-            args_node = self.parse_args(args)
+            index, args = self.parse_args(signatures)
             return Node(
                 NodeType.INSTR,
                 signatures[index].memory_layout,
                 [instr_token],
-                [args_node],
+                args,
             )
         elif instr_name in self.macros:
             signatures = self.macros_sig[instr_name]
-            index, args = self.select_signature(signatures)
+            index, args = self.parse_args(signatures)
             return self.resolve_macro(index, args)
         else:
-            raise ParsingError("Unnkown Instruction!")
+            raise ParsingError(f"Unnkown Instruction! {instr_token}")
 
-    def select_signature(self, signatures: list[Signature]):
-        # TODO: Select a signature
-        pass
+    def parse_args(self, signatures: list[Signature]):
+        possible = [sig.param_count > 1 for sig in signatures]
+        args = []
+        count = sum(possible)
+        index = 0
+        while count > 0:
+            token = self.tokenizer.peek_next_token()
+            token_type = token.token_type
+            if token_type in TokenType.IMMEDIATE | TokenType.OPEN_PARAN:
+                args.append(self.consume_expression())
+            elif token_type == TokenType.REGISTER:
+                self.tokenizer.get_next_token()
+                args.append(
+                    Node(NodeType.REGISTER, REGISTER_MAPPING[token.value], [token])
+                )
+            elif token_type == TokenType.IREGISTER:
+                self.tokenizer.get_next_token()
+                args.append(
+                    Node(NodeType.REGISTER, IREGISTER_MAPPING[token.value], [token])
+                )
+            else:
+                break
+            for i, sig in enumerate(signatures):
+                if not possible[i]:
+                    continue
+                if index >= sig.param_count:
+                    possible[i] = False
+                    count -= 1
+                    continue
+                if token_type not in sig.param_types[index]:
+                    possible[i] = False
+                    count -= 1
+                    continue
+            index += 1
+            self.expect(TokenType.COMMA | TokenType.EOF | TokenType.EOL)
+        if count > 1:
+            raise ParsingError("Unexcpected condition: Colliding signatures.")
+        if count == 0:
+            raise ParsingError("No signature matches the given arguments")
+        sig_index = possible.index(True)
+        return sig_index, args
 
     def consume_expression(self):
         expr = Node(NodeType.EXPRESSION)
-        token = self.expect(TokenType.IMMEDIATE | TokenType.CLOSE_PARAN)
+        token = self.tokenizer.get_next_token()
         while True:
             token_type = token.token_type
             if token_type in TokenType.IMMEDIATE | TokenType.CLOSE_PARAN:
                 token = self.tokenizer.peek_next_token()
-                if token not in TokenType.OPERATOR | TokenType.CLOSE_PARAN:
+                if token.token_type not in TokenType.OPERATOR | TokenType.CLOSE_PARAN:
                     break
             elif token_type in TokenType.OPERATOR | TokenType.OPEN_PARAN:
                 token = self.expect(TokenType.OPEN_PARAN | TokenType.IMMEDIATE)
             else:
-                raise ParsingError("Unexpected condition. Report issue to ...")
+                raise ParsingError("Unexpected condition: Diffrent expression grammar")
             expr.tokens.append(token)
         return expr
 
@@ -153,7 +189,7 @@ class Parser:
             raise ParsingError(
                 error.format(token=token)
                 if error
-                else f"Unexpected Token. Expected {token_type}"
+                else f"Unexpected Token {token.token_type}. Expected {token_type}"
             )
         return token
 
@@ -167,5 +203,6 @@ class Parser:
         self.print_node(self.root, 0)
 
 
-p = Parser(buffer="ADD")
+p = Parser(buffer="ADD r1, r2, r3")
 p.parse()
+p.print_ast()
