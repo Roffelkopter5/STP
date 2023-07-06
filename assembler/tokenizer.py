@@ -9,6 +9,9 @@ class TokenizationError(Exception):
 
 
 class TokenType(Flag):
+    DUMMY = auto()
+    EOF = auto()
+    EOL = auto()
     LABEL = auto()
     PREPROCESSOR = auto()
     DIRECTIVE = auto()
@@ -26,8 +29,8 @@ class TokenType(Flag):
     CLOSE_PARAN = auto()
     IMMEDIATE = INT_LITERAL | HEX_LITERAL | BIN_LITERAL | CHAR_LITERAL | IDENTIFIER
     VPARAM = IMMEDIATE
-    RPARAM = REGISTER
-    IRPARAM = IREGISTER
+    RPARAM = REGISTER | DUMMY
+    IRPARAM = IREGISTER | DUMMY
     XPARAM = VPARAM | RPARAM
     IXPARAM = VPARAM | IRPARAM
     PARAM = VPARAM | RPARAM | IRPARAM | XPARAM | IXPARAM
@@ -45,31 +48,29 @@ TOKEN_DEFINTIONS = {
     TokenType.LABEL: re.compile(r"^[a-z]\w*:", re.IGNORECASE),
     TokenType.PREPROCESSOR: re.compile(r"^@[a-z]\w*", re.IGNORECASE),
     TokenType.DIRECTIVE: re.compile(r"^\.[a-z]\w*", re.IGNORECASE),
-    TokenType.IDENTIFIER: re.compile(r"[a-z]\w*", re.IGNORECASE),
-    TokenType.REGISTER: re.compile(r"^r\d{1,2}"),
-    TokenType.INT_LITERAL: re.compile(r"^\d+"),
+    TokenType.REGISTER: re.compile(r"^r\d{1,2}", re.IGNORECASE),
+    TokenType.IDENTIFIER: re.compile(r"^[a-z]\w*", re.IGNORECASE),
     TokenType.HEX_LITERAL: re.compile(r"^0x[\dA-F]+", re.IGNORECASE),
     TokenType.BIN_LITERAL: re.compile(r"^0b[01]+", re.IGNORECASE),
-    TokenType.CHAR_LITERAL: re.compile(r"'.*'"),
-    TokenType.STRING_LITERAL: re.compile(r"\".*\""),
+    TokenType.INT_LITERAL: re.compile(r"^\d+"),
+    TokenType.CHAR_LITERAL: re.compile(r"^'.*'"),
+    TokenType.STRING_LITERAL: re.compile(r"^\".*\""),
     TokenType.COMMA: re.compile(r"^,"),
     TokenType.OPEN_PARAN: re.compile(r"^\("),
     TokenType.CLOSE_PARAN: re.compile(r"^\)"),
-    TokenType.VPARAM: re.compile(r"^%v", re.IGNORECASE),
-    TokenType.RPARAM: re.compile(r"^%r", re.IGNORECASE),
-    TokenType.IRPARAM: re.compile(r"^%ir", re.IGNORECASE),
-    TokenType.XPARAM: re.compile(r"^%x", re.IGNORECASE),
-    TokenType.IXPARAM: re.compile(r"^%ix", re.IGNORECASE),
     TokenType.OPERATOR: re.compile(r"^\+|-|\*|/|~|\||&|%"),
 }
-COMMENT_AND_WHITESPACE = re.compile(r"^\s*(#[^\n]*|\s+)")
+COMMENT_AND_WHITESPACE = re.compile(r"^\s*(#.*|\s)")
 
 
 class Tokenizer:
     def __init__(self, buffer: str) -> None:
-        self.buffer = buffer.strip()
-        self.pointer = 0
+        self.line_index = 0
+        self.char_index = 0
+        self.buffer = buffer.strip().split()
         self.buff_len = len(self.buffer)
+        if self.buff_len == 0:
+            self.curr_token = Token(TokenType.EOF, "", self.line_index, self.char_index)
         self.curr_token = self.scan_token()
 
     def peek_next_token(self):
@@ -77,21 +78,35 @@ class Tokenizer:
 
     def get_next_token(self):
         current = self.curr_token
-        self.scan_token()
+        if current.token_type != TokenType.EOF:
+            self.scan_token()
         return current
 
     def scan_token(self):
-        while m := re.match(COMMENT_AND_WHITESPACE, self.buffer[self.pointer :]):
-            self.pointer += m.end()
-        if self.pointer >= self.buff_len:
-            self.curr_token = None
-            return None
+        line = self.buffer[self.line_index]
+        if self.char_index >= len(line):
+            self.curr_token = Token(TokenType.EOL, "", self.line_index, self.char_index)
+            self.line_index += 1
+            self.char_index = 0
+            return self.curr_token
+        if self.line_index >= self.buff_len:
+            self.curr_token = Token(
+                TokenType.EOF,
+                "",
+                self.line_index - 1,
+                len(self.buffer[self.line_index - 1]) - 1,
+            )
+            return self.curr_token
+        if m := re.match(COMMENT_AND_WHITESPACE, line[self.char_index :]):
+            self.char_index += m.end()
+            return self.scan_token()
         for token_type, token_def in TOKEN_DEFINTIONS.items():
-            if m := re.match(token_def, self.buffer[self.pointer :]):
-                self.pointer += m.end()
-                t = Token(token_type, m[0])
-                self.curr_token = t
-                return t
+            if m := re.match(token_def, line[self.char_index :]):
+                self.curr_token = Token(
+                    token_type, m[0], self.line_index, self.char_index
+                )
+                self.char_index += m.end()
+                return self.curr_token
         raise TokenizationError(
             f"Unknown Token at '{self.buffer[self.pointer:self.pointer+20]}'"
         )
