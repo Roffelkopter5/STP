@@ -2,10 +2,7 @@ from enum import Flag, auto
 from dataclasses import dataclass
 import re
 
-
-class TokenizationError(Exception):
-    def __init__(self, *args) -> None:
-        super().__init__(*args)
+from .output import TokenizationError, raise_error
 
 
 class TokenType(Flag):
@@ -67,17 +64,29 @@ class Tokenizer:
     def __init__(self, buffer: str) -> None:
         self.line_index = 0
         self.char_index = 0
-        self.buffer = buffer.strip().split("\n")
+        self.buffer = list(filter(lambda l: len(l) != 0, buffer.strip().split("\n")))
         self.buff_len = len(self.buffer)
         if self.buff_len == 0:
             self.curr_token = Token(TokenType.EOF, "", self.line_index, self.char_index)
-        self.curr_token = self.scan_token()
+        self.curr_token = None
+
+    def get_file(self):
+        return "dummy.stp"
+
+    def get_line(self, line: int):
+        if line < self.buff_len:
+            return ""
+        else:
+            return self.buffer[line]
 
     def peek_next_token(self):
         return self.curr_token
 
     def get_next_token(self):
-        current = self.curr_token
+        if self.curr_token:
+            current = self.curr_token
+        else:
+            current = self.scan_token()
         if current.token_type != TokenType.EOF:
             self.scan_token()
         return current
@@ -88,7 +97,7 @@ class Tokenizer:
                 TokenType.EOF,
                 "",
                 self.line_index - 1,
-                len(self.buffer[self.line_index - 1]) - 1,
+                len(self.buffer[self.line_index - 1]),
             )
             return self.curr_token
         line = self.buffer[self.line_index]
@@ -98,6 +107,9 @@ class Tokenizer:
             self.char_index = 0
             return self.curr_token
         if m := re.match(COMMENT_AND_WHITESPACE, line[self.char_index :]):
+            raise_error(
+                TokenizationError("Whitespace", self.line_index, self.char_index)
+            )
             self.char_index += m.end()
             return self.scan_token()
         for token_type, token_def in TOKEN_DEFINTIONS.items():

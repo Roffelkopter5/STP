@@ -1,15 +1,6 @@
-from enum import Flag, auto
+from assembler.tokenizer import Tokenizer
+from assembler.output import ErrorHandler, raise_error, TokenizationError
 
-class T(Flag):
-    ONE = auto()
-    TWO = auto()
-    THREE = auto()
-    FOUR = ONE | TWO | THREE
-    FIVE = ONE | TWO | THREE
+handler = ErrorHandler("aaaa")
 
-a = T.ONE
-match a:
-    case x if x in T.FOUR:
-        print("Yes")
-    case _:
-        print("No")
+raise_error(TokenizationError("Test", 0, 2))

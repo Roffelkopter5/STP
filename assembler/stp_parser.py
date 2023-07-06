@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, DefaultDict
 from collections import defaultdict
 from enum import Enum, auto
-from tokenizer import Tokenizer, Token, TokenType
+from .tokenizer import Tokenizer, Token, TokenType
 from dataclasses import dataclass, field
 
 
@@ -45,10 +45,7 @@ IREGISTER_MAPPING: dict[str, int] = {}
 
 
 class Parser:
-    def __init__(self, *, path: str = "", buffer: str = ""):
-        if path != "":
-            with open(path, "r") as f:
-                buffer = f.read()
+    def __init__(self, buffer: str = ""):
         self.tokenizer = Tokenizer(buffer)
         self.root = Node(NodeType.ROOT, children=[])
 
@@ -202,8 +199,3 @@ class Parser:
 
     def print_ast(self):
         self.print_node(self.root, 0)
-
-
-p = Parser(path="./example.stp")
-p.parse()
-p.print_ast()
