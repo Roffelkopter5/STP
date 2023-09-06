@@ -3,8 +3,6 @@ from queue import Queue, Empty
 import time
 from typing import NamedTuple
 from enum import Enum, auto
-from threading import Thread
-import random
 
 
 class RequestMethod(Enum):
@@ -144,3 +142,6 @@ class DeviceController:
             for dev in self.devices:
                 if dev:
                     dev.update(delta)
+        for port, dev in enumerate(self.devices):
+            if dev:
+                dev.shutdown()

@@ -1,0 +1,8 @@
+ADD r0, r0, 136
+ADD r1, r1, 192
+ADD r2, r0, r1
+SUB r3, r1, r0
+SHA r4, r3, 2
+SHL r5, r3, 2
+SHR r6, r3, 2
+HLT

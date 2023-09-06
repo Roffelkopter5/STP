@@ -163,7 +163,7 @@ class CPU:
 
     def arithmetic(self, o):
         d, a, b = self.load_operands()
-        res = o(a, b)
+        res = o(a, b) % 256
         self.update_flags(res)
         self.registers.set_register(d, res)
 
@@ -185,7 +185,10 @@ class CPU:
     def shr_(self):
         self.arithmetic(lambda a, b: a >> b)
 
-    # TODO sha_
+    def sha_(self):
+        def two(x):
+            return (x ^ 0xFF) + 1
+        self.arithmetic(lambda a, b: two(two(a) >> b) if a & 0x80 else a >> b)
 
     def and_(self):
         self.arithmetic(lambda a, b: a & b)
