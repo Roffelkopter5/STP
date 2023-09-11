@@ -1,0 +1,5 @@
+@macro
+LDI %r, %i
+    ADD %0, %0, %1
+
+

@@ -3,6 +3,7 @@ from typing import Any, DefaultDict
 from collections import defaultdict
 from enum import Enum, auto
 from .tokenizer import Tokenizer, Token, TokenType
+from .macro import Macro
 from dataclasses import dataclass, field
 
 
@@ -88,12 +89,30 @@ class Parser:
                 raise ParsingError("Unknown preproccesor command")
 
     def parse_macro(self):
-        name_token = self.expect(TokenType.IDENTIFIER)
-        if name_token.value in INSTRUCTION_SET:
+        macro_name = self.expect(TokenType.IDENTIFIER).value
+        if macro_name in INSTRUCTION_SET:
             raise ParsingError("Invalid macro name. Collides with instruction.")
-        params = []
-        while self.tokenizer.peek_next_token().token_type == TokenType.PARAM:
-            params.append(self.tokenizer.get_next_token())
+        if macro_name in self.macros:
+            raise ParsingError("Invalid macro name. Macro allready defined.")
+        token = self.tokenizer.peek_next_token()
+        macro_body = []
+        while token.token_type != TokenType.PREPROCESSOR:
+            match token.token_type:
+                case TokenType.DIRECTIVE:
+                    node = self.parse_directive()
+                # case TokenType.PREPROCESSOR:
+                #     node = self.parse_preprocessor()
+                case TokenType.IDENTIFIER:
+                    node = self.parse_instruction()
+                case TokenType.EOL:
+                    self.tokenizer.get_next_token()
+                case _:
+                    raise ParsingError("Unexpected Token")
+            macro_body.append(node)
+            token = self.tokenizer.peek_next_token()
+        if token.value != "end":
+            raise ParsingError("Preprocessor instruction not allowed in macro body")
+        # Todo: Return Macro 
 
     def parse_instruction(self):
         instr_token = self.tokenizer.get_next_token()
