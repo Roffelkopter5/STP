@@ -26,15 +26,22 @@ class OpCode(Enum):
     OUTB = auto()  # 14
 
     LDB = auto()
-    STB = auto()  # 16
+    LDA = auto()
+    STB = auto()
+    MOV = auto()
+    PUSH = auto()
+    POP = auto()  # 20
 
-    JMP = auto()  # 17
-    JZE = auto()
+    JMP = auto()
+    JZ = auto()
     JNZ = auto()
-    JCA = auto()
+    JC = auto()
     JNC = auto()
-    JSN = auto()
-    JNS = auto()  # 23
+    JS = auto()
+    JNS = auto()  # 27
+
+    CALL = auto()
+    RET = auto()  # 29
 
     INT = 30
     HLT = 31
@@ -81,12 +88,16 @@ class CPU:
             self.instr_buffer |= self.memory.load_byte(self.PC()) << (8 * i)
 
     def decode_instr(self):
-        # 000IIIII | DDDD | SSSS | SSSS | XXXX
-        # 001IIIII | DDDD | SSSS | VVVV   VVVV
-        # 010IIIII | DDDD | VVVV   VVVV   VVVV
+        # 000IIIII | RRRR | RRRR | RRRR | XXXX
+        # 001IIIII | RRRR | RRRR | VVVV   VVVV
+        # 010IIIII | RRRR | VVVV   VVVV   VVVV
         # 011IIIII | VVVV   VVVV   VVVV   VVVV
-        # 100IIIII | DDDD | VVVV   VVVV | SSSS
-        # 111IIIII | VVVV   VVVV | VVVV   VVVV
+        # --------   ----   ----   ----   ----
+        # 100IIIII | RRRR | RRRR
+        # 101IIIII | RRRR | VVVV
+        # 110IIIII | VVVV   VVVV
+        # --------   ----   ----
+        # 111IIIII
         layout = (self.instr_buffer >> 22) & 0b11
         self.opcode = OpCode((self.instr_buffer >> 17) & 0b11111)
         if layout == 0:
@@ -126,7 +137,7 @@ class CPU:
     def execute_instr(self):
         self.fetch_instr()
         self.decode_instr()
-        if f := getattr(self, self.opcode.name.lower() + "_", None):
+        if f := getattr(self, "_" + self.opcode.name.lower(), None):
             f()
         else:
             print(f"'{self.opcode.name}' not implemented!")
@@ -157,10 +168,10 @@ class CPU:
     # endregion
     # region Instruction implementations
 
-    def hlt_(self):
+    def _hlt(self):
         self.running = False
 
-    def nop_(self):
+    def _nop(self):
         return
 
     def arithmetic(self, o):
@@ -169,50 +180,66 @@ class CPU:
         self.update_flags(res)
         self.registers.set_register(d, res)
 
-    def add_(self):
+    def _add(self):
         self.arithmetic(lambda a, b: a + b)
 
-    def addc_(self):
+    def _addc(self):
         self.arithmetic(lambda a, b: a + b + (1 if self.is_flag_set(Flag.CARRY) else 0))
 
-    def sub_(self):
+    def _sub(self):
         self.arithmetic(lambda a, b: a - b)
 
-    def subb_(self):
+    def _subb(self):
         self.arithmetic(lambda a, b: a - b - (1 if self.is_flag_set(Flag.SIGN) else 0))
 
-    def shl_(self):
+    def _shl(self):
         self.arithmetic(lambda a, b: a << b)
 
-    def shr_(self):
+    def _shr(self):
         self.arithmetic(lambda a, b: a >> b)
 
     # TODO sha_
 
-    def and_(self):
+    def _and(self):
         self.arithmetic(lambda a, b: a & b)
 
-    def or_(self):
+    def _or(self):
         self.arithmetic(lambda a, b: a | b)
 
-    def xor_(self):
+    def _xor(self):
         self.arithmetic(lambda a, b: a ^ b)
 
-    def nor_(self):
+    def _nor(self):
         self.arithmetic(lambda a, b: ~(a | b))
 
     ...
 
-    def jmp_(self):
+    def _jmp(self):
         self.pc = self.decoded_args["val"]
 
-    def jze_(self):
+    def _jz(self):
         if self.is_flag_set(Flag.ZERO):
             self.jmp_()
 
-    def jnz_(self):
+    def _jnz(self):
         if not self.is_flag_set(Flag.ZERO):
             self.jmp_()
+
+    def _jc(self):
+        if self.is_flag_set(Flag.CARRY):
+            self.jmp_()
+
+    def _jnc(self):
+        if not self.is_flag_set(Flag.CARRY):
+            self._jmp()
+
+    def _js(self):
+        if self.is_flag_set(Flag.SIGN):
+            self._jmp()
+
+    def _jns(self):
+        if not self.is_flag_set(Flag.SIGN):
+            self._jmp()
 
     # endregion
 
