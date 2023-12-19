@@ -1,3 +1,5 @@
+import datetime
+
 Address = int
 Byte = int
 
@@ -22,13 +24,35 @@ class Memory:
         if self.check_index(index):
             self.data[index] = byte & 0xFF
 
-    def load_from_file(self, path: str):
-        with open(path, "rb") as f:
-            buffer = f.read()
-        for i, byte in enumerate(buffer):
-            self.data[i] = byte
-
     def print_bytes(self, f: int, t: int):
         for i in range(f, t):
             print(f"{self.data[i]:0>2x}|", end="")
         print()
+
+    def save_snapshot(self, file: str = "mem.snap"):
+        with open(file, "wb") as f:
+            f.write(str(datetime.datetime.now()).encode())
+            f.write(b"\0")
+            curr = self.data[0]
+            count = 0
+            for v in self.data:
+                if v == curr:
+                    count += 1
+                else:
+                    f.write(curr.to_bytes())
+                    f.write(count.to_bytes())
+                    count = 1
+                    curr = v
+            f.write(curr.to_bytes())
+            f.write(count.to_bytes())
+
+    def load_snapshot(self, file: str):
+        with open(file, "rb") as f:
+            while f.read(1)[0] != 0:
+                continue
+            ind = 0
+            while len(b := f.read(2)) == 2:
+                v = b[0]
+                for i in range(ind, ind + b[1]):
+                    self.data[i] = v
+                ind += b[1]
