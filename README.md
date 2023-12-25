@@ -1,6 +1,7 @@
 # Super Toller Pc
 
 ## Instructions
+
 Each instruction gets encoded into 1 to 3 bytes according to its layout number `L` (0 through 7). While the Opcode (here `I`) gets encoded using 5 bits (so 32 Instructions total), so the first byte is always:
 
 `LLLIIIII`
@@ -8,14 +9,15 @@ Each instruction gets encoded into 1 to 3 bytes according to its layout number `
 Registers (here `R`) take 4 bits and intermediates (here `V`) can be everywhere between 4 to 16 bits depending on the layout of the instruction.
 
 The 8 possible Layouts are (`|`: Division, `-`: Compound):
- * `L0` : `000IIIII | RRRR | RRRR | RRRR | RRRR`
- * `L1` : `001IIIII | RRRR | RRRR | VVVV - VVVV`
- * `L2` : `010IIIII | RRRR | VVVV - VVVV - VVVV`
- * `L3` : `011IIIII | VVVV - VVVV - VVVV - VVVV`
- * `L4` : `100IIIII | RRRR | RRRR`
- * `L5` : `101IIIII | RRRR | XXXX`
- * `L6` : `110IIIII | VVVV - VVVV`
- * `L7` : `111IIIII`
+
+* `L0` : `000IIIII | RRRR | RRRR | RRRR | RRRR`
+* `L1` : `001IIIII | RRRR | RRRR | VVVV - VVVV`
+* `L2` : `010IIIII | RRRR | VVVV - VVVV - VVVV`
+* `L3` : `011IIIII | VVVV - VVVV - VVVV - VVVV`
+* `L4` : `100IIIII | RRRR | RRRR`
+* `L5` : `101IIIII | RRRR | XXXX`
+* `L6` : `110IIIII | VVVV - VVVV`
+* `L7` : `111IIIII`
 
 Here is a list of all instructions:
 | Name | Opcode | Layout  | Usage                 | Description                              |
@@ -54,7 +56,9 @@ Here is a list of all instructions:
 | HLT  | 31     | L7      | HLT                   | Halts the proccesor                      |
 
 ## Registers
+
 There are 13 8-bit registers that can directly be modififed and 3 16-bit registers that can not be directly modified. These are the 8-bit registers:
+
 * `A` or `S1`, General purpose
 * `B` or `S2`, General purpose
 * `C` or `S3`, General purpose
@@ -70,16 +74,19 @@ There are 13 8-bit registers that can directly be modififed and 3 16-bit registe
 * `MB`, Memory banking
 
 These are the 16-bit registers:
+
 * `IX`, Index register
 * `FP`, Frame pointer
 * `PC`, Programm counter
 
-All general purpose registers (`S1`-`S5`) get saved during a call or interrupt, temporary registers (`T1`-`T3`) may be overwritten. All 16-biit registers can be pushed and poped but only the index register `IX` and the frame pointer `FP` can be used in the LDA (Load address) instruction. Only the index register can be directly used in arithemtic operations through the high `H` and low `L` registers. Furthermore the stack pointer `SP` is always relativ to the frame pointer `FP`, so the absolute stack pointer is at `FP + SP`. 
+All general purpose registers (`S1`-`S5`) get saved during a call or interrupt, temporary registers (`T1`-`T3`) may be overwritten. All 16-biit registers can be pushed and poped but only the index register `IX` and the frame pointer `FP` can be used in the LDA (Load address) instruction. Only the index register can be directly used in arithemtic operations through the high `H` and low `L` registers. Furthermore the stack pointer `SP` is always relativ to the frame pointer `FP`, so the absolute stack pointer is at `FP + SP`.
 
 ## Memory
+
 The System has a 16-bit address bus and a 8-bit data bus, so a memory size of 64 KiB. But this can be extended through banking. Devices or other external hardware can only be mapped into a memory bank higher than zero. For example in the default config vram gets mapped to memory bank 1.
 
 Memory Layout:
+
 * `0x0000 - 0x07EF` Restricted ROM
 * `0x07F0 - 0x07FF` Interrupt vector table
 * `0x0800 - 0x0FFF` General purpose ROM
@@ -89,4 +96,19 @@ Memory Layout:
 * `0xFFFF - 0xFFFF` Device register
 
 ## Assembler
+
 All relevant infos in 'example.stp'.
+
+### Object files
+
+Object files compiled from stp assembly are structured in the following way:
+
+* `* bytes` Name of the stp file terminated with a `0` byte  
+* `* bytes` Version string of the compiler terminated with `0` byte
+* `1 byte` Compiler flags
+* `2 bytes` Entry count in symbol table
+* `* bytes` Symbol name terminated with `0` byte
+* `2 bytes` Symbol address, `0xFFFF` if unknown
+* `* bytes` All declared symbols
+* `3 bytes` Terminating null bytes
+* `* bytes` Machine code
