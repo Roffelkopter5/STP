@@ -1,0 +1,25 @@
+{
+  "name": "stp-assembly",
+  "displayName": "STP-Assembly",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.76.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "stp",
+      "aliases": ["stp-assembly", "stp"],
+      "extensions": [".stp"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "stp",
+      "scopeName": "source.stp",
+      "path": "./syntaxes/stp.tmLanguage.json"
+    }]
+  }
+}
