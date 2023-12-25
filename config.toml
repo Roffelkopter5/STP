@@ -1,0 +1,49 @@
+[signatures]
+"r.r.r" = 0
+"r.r.v" = 1
+"r.r" = 4
+"r.i" = 2
+"a" = 3
+"R.R" = 4
+"r" = 5
+"R" = 5
+"v" = 6
+"" = 7
+
+[instructions]
+nop = ""
+add = ["r.r.r", "r.r.v"]
+addc = "*"
+sub = "*"
+subb = "*"
+shr = "*"
+shl = "*"
+sha = "*"
+and = "*"
+or = "*"
+xor = "*"
+nor = "*"
+cmp = ["r.r"]
+inb = "*"
+outb = "*"
+ldb = ["r.i"]
+lda = ["a"]
+stb = ["r.i"]
+mov = ["r.r", "R.R"]
+push = ["r", "R", "v", "a"]
+pop = ["r", "R"]
+jmp = ["a", "R"]
+jz = "*"
+jnz = "*"
+jc = "*"
+jnc = "*"
+js = "*"
+jns = "*"
+call = "*"
+ret = ""
+int = ["r", "v"]
+hlt = ""
+
+[aliases]
+
+[registers]

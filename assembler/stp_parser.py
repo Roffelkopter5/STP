@@ -49,10 +49,15 @@ class Parser:
     def __init__(self, buffer: str = ""):
         self.tokenizer = Tokenizer(buffer)
         self.root = Node(NodeType.ROOT, children=[])
+        self.head = self.root
 
         self.macros: DefaultDict[str, list[Signature]] = defaultdict(list)
 
     def parse(self):
+        body = self.parse_body()
+        self.root.children.extend(body)
+
+    def parse_body(self):
         token = self.tokenizer.peek_next_token()
         node = None
         while token.token_type != TokenType.EOF:
@@ -60,8 +65,7 @@ class Parser:
                 case TokenType.DIRECTIVE:
                     node = self.parse_directive()
                 case TokenType.LABEL:
-                    self.tokenizer.get_next_token()
-                    node = Node(NodeType.LABEL, token.value[:-1], [token])
+                    node = self.parse_label()
                 case TokenType.PREPROCESSOR:
                     node = self.parse_preprocessor()
                 case TokenType.IDENTIFIER:
@@ -71,18 +75,30 @@ class Parser:
                 case _:
                     raise ParsingError("Unexpected Token")
             if isinstance(node, list):
-                self.root.children.extend(node)
+                self.head.children.extend(node)
             elif node:
-                self.root.children.append(node)
-            token = self.tokenizer.peek_next_token()
-
+                self.head.children.append(node)
+    
     def parse_directive(self):
         pass
+    
+    def parse_label(self):
+        token = self.tokenizer.get_next_token()
+        name = token.value[:-1]
+        if name.startswith("."):
+            return Node(NodeType.LABEL, self.head.value+name, [token])
+        else:
+            node = Node(NodeType.LABEL, name, [token])
+            self.root.children.append(node)
+            self.head = node
 
-    def parse_preprocessor(self, token: Token):
+    def parse_preprocessor(self):
+        token = self.tokenizer.get_next_token()
         match token.value[1:].lower():
             case "macro":
-                self.parse_macro(self)
+                self.parse_macro()
+            case "define":
+                self.parse_define()
             case "end":
                 raise ParsingError("No prepocessor block to end")
             case _:
@@ -113,6 +129,9 @@ class Parser:
         if token.value != "end":
             raise ParsingError("Preprocessor instruction not allowed in macro body")
         # Todo: Return Macro 
+
+    def parse_define(self):
+        pass
 
     def parse_instruction(self):
         instr_token = self.tokenizer.get_next_token()
